@@ -45,7 +45,7 @@
             border-radius: 12px;
             overflow: hidden;
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            display: none; /* Скрыт по умолчанию */
+            display: none;
             border: 1px solid var(--tg-theme-hint-color, #dddddd);
         }
         .video-preview.show {
@@ -93,7 +93,6 @@
             display: block;
         }
         
-        /* Комментарий */
         .comment-label {
             margin: 15px 0 5px;
             color: var(--tg-theme-hint-color, #666666);
@@ -126,17 +125,14 @@
     <div class="container">
         <h1>📹 Предложить видео</h1>
         
-        <!-- Поле для ссылки -->
         <input type="text" 
                id="videoUrl" 
                class="input-field" 
                placeholder="Вставьте ссылку на YouTube видео" 
                value="">
         
-        <!-- Индикатор загрузки -->
         <div id="loading" class="loading">⏳ Загружаем информацию о видео...</div>
         
-        <!-- Блок с предпросмотром видео -->
         <div id="videoPreview" class="video-preview">
             <img id="thumbnail" class="video-thumbnail" src="" alt="Превью видео" onclick="openVideo()">
             <div class="video-info">
@@ -146,10 +142,8 @@
             </div>
         </div>
         
-        <!-- Сообщение об ошибке -->
         <div id="errorMessage" class="error-message"></div>
         
-        <!-- Поле для комментария (появляется после загрузки видео) -->
         <div id="commentSection" style="display: none;">
             <div class="comment-label">Комментарий к видео (необязательно):</div>
             <textarea id="comment" 
@@ -158,7 +152,6 @@
                       rows="3"></textarea>
         </div>
         
-        <!-- Кнопка отправки -->
         <button id="submitBtn" class="button" onclick="sendProposal()" disabled>Отправить предложку</button>
     </div>
 
@@ -167,10 +160,8 @@
         tg.ready();
         tg.expand();
 
-        // Данные о текущем видео
         let currentVideoData = null;
 
-        // Получаем элементы DOM
         const videoUrlInput = document.getElementById('videoUrl');
         const videoPreview = document.getElementById('videoPreview');
         const loading = document.getElementById('loading');
@@ -180,17 +171,9 @@
         const thumbnail = document.getElementById('thumbnail');
         const videoTitle = document.getElementById('videoTitle');
         const videoAuthor = document.getElementById('videoAuthor');
-        const videoStats = document.getElementById('videoStats');
 
-        // Функция для извлечения ID видео из ссылки YouTube
         function extractVideoId(url) {
             if (!url) return null;
-            
-            // Поддерживаемые форматы ссылок YouTube:
-            // https://www.youtube.com/watch?v=VIDEO_ID
-            // https://youtu.be/VIDEO_ID
-            // https://youtube.com/shorts/VIDEO_ID
-            // https://m.youtube.com/watch?v=VIDEO_ID
             
             const patterns = [
                 /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
@@ -204,17 +187,14 @@
             return null;
         }
 
-        // Функция для получения информации о видео через YouTube oEmbed API
         async function fetchVideoInfo(videoId) {
             try {
-                // Показываем загрузку
                 loading.classList.add('show');
                 videoPreview.classList.remove('show');
                 errorMessage.classList.remove('show');
                 commentSection.style.display = 'none';
                 submitBtn.disabled = true;
                 
-                // Используем YouTube oEmbed API (бесплатно, без ключа)
                 const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
                 
                 if (!response.ok) {
@@ -223,35 +203,28 @@
                 
                 const data = await response.json();
                 
-                // Сохраняем данные о видео
                 currentVideoData = {
                     id: videoId,
                     title: data.title,
                     author: data.author_name,
                     author_url: data.author_url,
-                    thumbnail_url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`, // Максимальное качество
+                    thumbnail_url: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
                     url: `https://www.youtube.com/watch?v=${videoId}`
                 };
                 
-                // Показываем превью
                 thumbnail.src = currentVideoData.thumbnail_url;
                 thumbnail.onerror = () => {
-                    // Если нет maxresdefault, пробуем стандартное
                     thumbnail.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                 };
                 
                 videoTitle.textContent = currentVideoData.title;
                 videoAuthor.textContent = `📺 ${currentVideoData.author}`;
                 
-                // Пытаемся получить статистику (просмотры, дата) через дополнительный запрос
-                fetchVideoStats(videoId);
-                
                 videoPreview.classList.add('show');
                 commentSection.style.display = 'block';
                 submitBtn.disabled = false;
                 
             } catch (error) {
-                console.error('Ошибка загрузки видео:', error);
                 errorMessage.textContent = '❌ Не удалось загрузить видео. Проверьте ссылку.';
                 errorMessage.classList.add('show');
                 currentVideoData = null;
@@ -260,28 +233,12 @@
             }
         }
 
-        // Функция для получения статистики видео (необязательно, можно удалить если не нужно)
-        async function fetchVideoStats(videoId) {
-            // Это более сложный запрос, требует API ключ YouTube
-            // Для простоты показываем только дату загрузки через oEmbed
-            try {
-                const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-                const data = await response.json();
-                // В oembed нет просмотров, но есть дата загрузки в html
-                // Можно добавить дату если нужно
-            } catch (error) {
-                console.log('Не удалось получить статистику');
-            }
-        }
-
-        // Функция для открытия видео в новой вкладке
         function openVideo() {
             if (currentVideoData) {
                 window.open(currentVideoData.url, '_blank');
             }
         }
 
-        // Обработчик ввода ссылки (с задержкой, чтобы не ддосить API)
         let timeoutId;
         videoUrlInput.addEventListener('input', function(e) {
             clearTimeout(timeoutId);
@@ -292,7 +249,6 @@
                 if (videoId) {
                     fetchVideoInfo(videoId);
                 } else {
-                    // Если ссылка не валидная, показываем ошибку
                     if (url.length > 0) {
                         errorMessage.textContent = '❌ Пожалуйста, введите корректную ссылку на YouTube';
                         errorMessage.classList.add('show');
@@ -304,10 +260,10 @@
                         errorMessage.classList.remove('show');
                     }
                 }
-            }, 1000); // Ждем 1 секунду после того, как пользователь перестал печатать
+            }, 1000);
         });
 
-        // Функция отправки предложки
+        // ========== ВОТ ЭТО ГЛАВНОЕ ИЗМЕНЕНИЕ ==========
         function sendProposal() {
             if (!currentVideoData) {
                 tg.showAlert('Сначала добавьте ссылку на видео');
@@ -315,30 +271,52 @@
             }
 
             const comment = document.getElementById('comment').value;
-            
-            // Получаем данные о пользователе
             const user = tg.initDataUnsafe?.user;
             
-            // Формируем данные для отправки
-            const data = {
-                type: 'video_proposal',
-                video: currentVideoData,
-                comment: comment || '',
-                user: user ? {
-                    id: user.id,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    username: user.username
-                } : null,
-                date: new Date().toISOString()
-            };
-            
-            // Показываем подтверждение
-            tg.showConfirm('Отправить это видео как предложку?', (confirmed) => {
-                if (confirmed) {
-                    // Отправляем данные боту
-                    tg.sendData(JSON.stringify(data));
+            // Получаем имя пользователя
+            let userName = 'Аноним';
+            if (user) {
+                if (user.username) {
+                    userName = '@' + user.username;
+                } else {
+                    userName = user.first_name || 'Аноним';
                 }
+            }
+            
+            // Формируем сообщение для бота
+            const message = `🎥 НОВОЕ ПРЕДЛОЖЕНИЕ ВИДЕО\n\n` +
+                `📹 Название: ${currentVideoData.title}\n` +
+                `👤 Автор канала: ${currentVideoData.author}\n` +
+                `🔗 Ссылка: ${currentVideoData.url}\n` +
+                `💬 Комментарий: ${comment || 'нет'}\n` +
+                `👤 Отправитель: ${userName}`;
+            
+            // ВОТ ТУТ МЫ ОТПРАВЛЯЕМ В ТВОЕГО БОТА
+            // Используем прямой метод отправки в бота
+            fetch(`https://api.telegram.org/bot7672587448:AAGNdY2PXjJf4hwla14-tY09kkqQs_JyyD8/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chat_id: '5085049292', // СЮДА НАДО ВСТАВИТЬ ТВОЙ ЧАТ ID
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    tg.showAlert('✅ Видео отправлено! Оно появилось у админа.');
+                    // Закрываем приложение через 2 секунды
+                    setTimeout(() => tg.close(), 2000);
+                } else {
+                    tg.showAlert('❌ Ошибка отправки. Попробуйте еще раз.');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                tg.showAlert('❌ Ошибка сети. Проверьте соединение.');
             });
         }
 
@@ -348,10 +326,8 @@
             sendProposal();
         });
         
-        // Показываем кнопку только когда есть видео
         tg.MainButton.hide();
 
-        // Следим за состоянием, чтобы показывать/скрывать кнопку
         function updateMainButton() {
             if (currentVideoData) {
                 tg.MainButton.show();
@@ -360,18 +336,8 @@
             }
         }
 
-        // Переопределяем функцию sendProposal чтобы обновлять кнопку
-        const originalSendProposal = sendProposal;
-        sendProposal = function() {
-            originalSendProposal();
-        };
-
-        // Добавляем наблюдатель за изменениями
         const observer = new MutationObserver(updateMainButton);
         observer.observe(submitBtn, { attributes: true, attributeFilter: ['disabled'] });
-
-        // Приветственное сообщение
-        console.log('Mini App запущен! Жду ссылку на YouTube...');
     </script>
 </body>
 </html>
